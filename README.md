@@ -1,3 +1,10 @@
+# Plataforma de adopción de mascotas
+
+Script SQL para crear y poblar la base de datos `plataforma_adopcion`, seguido de consultas básicas y consultas con agregación.
+
+## 1. Creación de la base de datos, tablas y datos de prueba
+
+```sql
 create database plataforma_adopcion;
 
 drop table if exists seguimiento cascade;
@@ -178,3 +185,125 @@ insert into seguimiento (fecha_visita, observaciones, estado_mascota, id_adopcio
 ('2026-06-16', 'jugueton pero muy educado', 'muy bueno', 8),
 ('2026-09-14', 'visita reciente al veterinario sin novedades', 'bueno', 9),
 ('2026-12-08', 'la familia esta encantada con el', 'excelente', 10);
+```
+
+## 2. Consultas básicas
+
+### 1. Listar el identificador, nombre, raza, edad y estado de todos los perros de tamaño grande, ordenados de mayor a menor edad.
+
+```sql
+select id_mascota, nombre, raza, edad, estado
+from mascota
+where especie = 'perro' and tamano = 'grande'
+order by edad desc;
+```
+
+### 2. Mostrar las cinco solicitudes de adopción más recientes, indicando su fecha, estado, el nombre del adoptante que la realizó y el nombre de la mascota solicitada.
+
+```sql
+select
+    s.id_solicitud,
+    s.fecha_solicitud,
+    s.estado,
+    a.nombre as adoptante,
+    m.nombre as mascota
+from solicitud_adopcion s
+inner join adoptante a on a.id_adoptante = s.id_adoptante
+inner join mascota m on m.id_mascota = s.id_mascota
+order by s.fecha_solicitud desc
+limit 5;
+```
+
+### 3. Consultar los adoptantes cuyo nombre comienza por “maria”, mostrando su identificador, nombre, teléfono y correo, ordenados alfabéticamente.
+
+```sql
+select id_adoptante, nombre, telefono, correo
+from adoptante
+where nombre like 'maria%'
+order by nombre;
+```
+
+### 4. Obtener las mascotas con una edad comprendida entre 2 y 4 años, mostrando su nombre, especie y edad, ordenadas por edad y nombre.
+
+```sql
+select id_mascota, nombre, especie, edad
+from mascota
+where edad between 2 and 4
+order by edad, nombre;
+```
+
+### 5. Listar las adopciones realizadas durante el año 2025, ordenadas cronológicamente por su fecha de adopción.
+
+```sql
+select id_adopcion, fecha_adopcion, id_solicitud
+from adopcion
+where fecha_adopcion between '2025-01-01' and '2025-12-31'
+order by fecha_adopcion;
+```
+
+### 6. Identificar los refugios ubicados en la ciudad de Medellín, mostrando su nombre, dirección y teléfono.
+
+```sql
+select id_refugio, nombre, direccion, telefono
+from refugio
+where direccion like '%medellin%';
+```
+
+## 3. Consultas con agregación
+
+### 1. Calcular, para cada especie, el total de mascotas registradas, la suma de sus edades, la edad promedio, la edad mínima y la edad máxima, ordenando el resultado de mayor a menor cantidad de mascotas.
+
+```sql
+select especie,
+       count(*) as total_mascotas,
+       sum(edad) as suma_edades,
+       round(avg(edad), 1) as edad_promedio,
+       min(edad) as edad_minima,
+       max(edad) as edad_maxima
+from mascota
+group by especie
+order by total_mascotas desc;
+```
+
+### 2. Determinar los refugios que tienen más de una mascota registrada, indicando el nombre del refugio y la cantidad de mascotas que alberga.
+
+```sql
+select r.nombre as refugio,
+       count(m.id_mascota) as total_mascotas
+from refugio r
+inner join mascota m on m.id_refugio = r.id_refugio
+group by r.nombre
+having count(m.id_mascota) > 1;
+```
+
+### 3. Contar la cantidad de solicitudes de adopción según su estado (pendiente, aprobada o rechazada), ordenando el resultado de mayor a menor cantidad.
+
+```sql
+select estado, count(*) as total_solicitudes
+from solicitud_adopcion
+group by estado
+order by total_solicitudes desc;
+```
+
+### 4. Obtener, para cada estado de solicitud, la cantidad total de solicitudes junto con la fecha de la primera y de la última solicitud registrada.
+
+```sql
+select estado,
+       count(*) as total,
+       min(fecha_solicitud) as primera_solicitud,
+       max(fecha_solicitud) as ultima_solicitud
+from solicitud_adopcion
+group by estado;
+```
+
+### 5. Identificar las vacunas que han sido aplicadas al menos dos veces, mostrando el nombre de la vacuna y el número de aplicaciones, ordenadas de mayor a menor.
+
+```sql
+select v.nombre as vacuna,
+       count(*) as aplicaciones
+from vacunacion vc
+inner join vacuna v on v.id_vacuna = vc.id_vacuna
+group by v.nombre
+having count(*) >= 2
+order by aplicaciones desc;
+```
