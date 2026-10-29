@@ -376,5 +376,82 @@ where estado_salud = 'saludable';
 
 ```
 
+## 6. triggers y procedimientos
 
+### 1. Trigger funcional : En la plataforma de adopción, cuando una solicitud se aprueba y se registra formalmente en la tabla adopcion, el estado de la mascota en la tabla mascota debe pasar automáticamente a 'adoptado' y cualquier otra solicitud que estuviera 'pendiente' para ese mismo animal debe cerrarse como 'rechazada'. Implementar un trigger AFTER INSERT sobre la tabla adopcion automatiza esta regla de negocio directamente en el motor de la base de datos, evitando inconsistencias humanas o que dos personas adopten a la misma mascota por error.
+
+```
+create or replace function fn_actualizar_mascota_adoptada()
+returns trigger as $$
+declare
+    v_id_mascota int;
+begin
+    select id_mascota into v_id_mascota
+    from solicitud_adopcion
+    where id_solicitud = new.id_solicitud;
+
+    update mascota
+    set estado = 'adoptado'
+    where id_mascota = v_id_mascota;
+
+    update solicitud_adopcion
+    set estado = 'rechazada',
+        motivo_rechazo = 'la mascota ya fue adoptada en otro proceso'
+    where id_mascota = v_id_mascota
+      and id_solicitud <> new.id_solicitud
+      and estado = 'pendiente';
+
+    return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_actualizar_estado_adopcion
+after insert on adopcion
+for each row
+execute function fn_actualizar_mascota_adoptada();
+
+```
+
+### 2. procedimiento almacenado : El proceso de aprobar y concretar una adopción implica validar el estado actual de la solicitud, modificar múltiples tablas (solicitud_adopcion, adopcion y seguimiento) y asegurar que ninguna operación quede a medias. Un procedimiento almacenado permite encapsular toda esta transacción en una sola llamada (CALL): verifica que la solicitud esté 'pendiente' (lanzando una excepción si no lo está), aprueba la solicitud, crea el registro oficial de adopción y programa automáticamente la primera visita de seguimiento para dentro de 30 días
+
+```
+create or replace procedure sp_aprobar_y_registrar_adopcion(
+    p_id_solicitud int,
+    p_observacion_inicial text
+)
+language plpgsql
+as $$
+declare
+    v_estado_actual varchar(20);
+    v_id_nueva_adopcion int;
+begin
+    select estado into v_estado_actual
+    from solicitud_adopcion
+    where id_solicitud = p_id_solicitud;
+
+    if not found then
+        raise exception 'la solicitud % no existe', p_id_solicitud;
+    end if;
+
+    if v_estado_actual <> 'pendiente' then
+        raise exception 'la solicitud % no se puede aprobar porque su estado actual es %', p_id_solicitud, v_estado_actual;
+    end if;
+
+    update solicitud_adopcion
+    set estado = 'aprobada',
+        motivo_rechazo = null
+    where id_solicitud = p_id_solicitud;
+
+    insert into adopcion (fecha_adopcion, id_solicitud)
+    values (current_date, p_id_solicitud)
+    returning id_adopcion into v_id_nueva_adopcion;
+
+    insert into seguimiento (fecha_visita, observaciones, estado_mascota, id_adopcion)
+    values (current_date + interval '30 days', p_observacion_inicial, 'excelente', v_id_nueva_adopcion);
+
+    raise notice 'adopcion registrada con exito con id % y seguimiento programado', v_id_nueva_adopcion;
+end;
+$$;
+
+```
 
