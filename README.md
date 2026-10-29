@@ -189,13 +189,14 @@ insert into seguimiento (fecha_visita, observaciones, estado_mascota, id_adopcio
 
 ## 2. Consultas básicas
 
-### 1. Listar el identificador, nombre, raza, edad y estado de todos los perros de tamaño grande, ordenados de mayor a menor edad.
+### 1. Listar el identificador, nombre, raza, edad y estado de los 3 perros de tamaño grande de mayor edad.
 
 ```sql
 select id_mascota, nombre, raza, edad, estado
 from mascota
 where especie = 'perro' and tamano = 'grande'
-order by edad desc;
+order by edad desc
+limit 3;
 ```
 
 ### 2. Consultar los adoptantes cuyo nombre comienza por “maria”, mostrando su identificador, nombre, teléfono y correo, ordenados alfabéticamente.
