@@ -378,7 +378,7 @@ where estado_salud = 'saludable';
 
 ## 6. triggers y procedimientos
 
-### 1. Trigger funcional : En la plataforma de adopción, cuando una solicitud se aprueba y se registra formalmente en la tabla adopcion, el estado de la mascota en la tabla mascota debe pasar automáticamente a 'adoptado' y cualquier otra solicitud que estuviera 'pendiente' para ese mismo animal debe cerrarse como 'rechazada'. Implementar un trigger AFTER INSERT sobre la tabla adopcion automatiza esta regla de negocio directamente en el motor de la base de datos, evitando inconsistencias humanas o que dos personas adopten a la misma mascota por error.
+### 1. Trigger funcional : En la plataforma de adopción, cuando una solicitud se aprueba y se registra formalmente en la tabla adopcion, el estado de la mascota en la tabla mascota debe pasar automáticamente a 'adoptado' y cualquier otra solicitud que estuviera 'pendiente' para ese mismo animal debe cerrarse como 'rechazada'. Implementar un trigger after insert sobre la tabla adopcion automatiza esta regla de negocio directamente en el motor de la base de datos, evitando inconsistencias humanas o que dos personas adopten a la misma mascota por error.
 
 ```
 create or replace function fn_actualizar_mascota_adoptada()
@@ -412,7 +412,7 @@ execute function fn_actualizar_mascota_adoptada();
 
 ```
 
-### 2. procedimiento almacenado : El proceso de aprobar y concretar una adopción implica validar el estado actual de la solicitud, modificar múltiples tablas (solicitud_adopcion, adopcion y seguimiento) y asegurar que ninguna operación quede a medias. Un procedimiento almacenado permite encapsular toda esta transacción en una sola llamada (CALL): verifica que la solicitud esté 'pendiente' (lanzando una excepción si no lo está), aprueba la solicitud, crea el registro oficial de adopción y programa automáticamente la primera visita de seguimiento para dentro de 30 días
+### 2. procedimiento almacenado : El proceso de aprobar y concretar una adopción implica validar el estado actual de la solicitud, modificar múltiples tablas (solicitud_adopcion, adopcion y seguimiento) y asegurar que ninguna operación quede a medias. Un procedimiento almacenado permite encapsular toda esta transacción en una sola llamada (call): verifica que la solicitud esté 'pendiente' (lanzando una excepción si no lo está), aprueba la solicitud, crea el registro oficial de adopción y programa automáticamente la primera visita de seguimiento para dentro de 30 días
 
 ```
 create or replace procedure sp_aprobar_y_registrar_adopcion(
