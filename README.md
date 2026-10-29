@@ -198,23 +198,7 @@ where especie = 'perro' and tamano = 'grande'
 order by edad desc;
 ```
 
-### 2. Mostrar las cinco solicitudes de adopción más recientes, indicando su fecha, estado, el nombre del adoptante que la realizó y el nombre de la mascota solicitada.
-
-```sql
-select
-    s.id_solicitud,
-    s.fecha_solicitud,
-    s.estado,
-    a.nombre as adoptante,
-    m.nombre as mascota
-from solicitud_adopcion s
-inner join adoptante a on a.id_adoptante = s.id_adoptante
-inner join mascota m on m.id_mascota = s.id_mascota
-order by s.fecha_solicitud desc
-limit 5;
-```
-
-### 3. Consultar los adoptantes cuyo nombre comienza por “maria”, mostrando su identificador, nombre, teléfono y correo, ordenados alfabéticamente.
+### 2. Consultar los adoptantes cuyo nombre comienza por “maria”, mostrando su identificador, nombre, teléfono y correo, ordenados alfabéticamente.
 
 ```sql
 select id_adoptante, nombre, telefono, correo
@@ -223,7 +207,7 @@ where nombre like 'maria%'
 order by nombre;
 ```
 
-### 4. Obtener las mascotas con una edad comprendida entre 2 y 4 años, mostrando su nombre, especie y edad, ordenadas por edad y nombre.
+### 3. Obtener las mascotas con una edad comprendida entre 2 y 4 años, mostrando su nombre, especie y edad, ordenadas por edad y nombre.
 
 ```sql
 select id_mascota, nombre, especie, edad
@@ -232,7 +216,7 @@ where edad between 2 and 4
 order by edad, nombre;
 ```
 
-### 5. Listar las adopciones realizadas durante el año 2025, ordenadas cronológicamente por su fecha de adopción.
+### 4. Listar las adopciones realizadas durante el año 2025, ordenadas cronológicamente por su fecha de adopción.
 
 ```sql
 select id_adopcion, fecha_adopcion, id_solicitud
@@ -241,7 +225,7 @@ where fecha_adopcion between '2025-01-01' and '2025-12-31'
 order by fecha_adopcion;
 ```
 
-### 6. Identificar los refugios ubicados en la ciudad de Medellín, mostrando su nombre, dirección y teléfono.
+### 5. Identificar los refugios ubicados en la ciudad de Medellín, mostrando su nombre, dirección y teléfono.
 
 ```sql
 select id_refugio, nombre, direccion, telefono
@@ -307,3 +291,90 @@ group by v.nombre
 having count(*) >= 2
 order by aplicaciones desc;
 ```
+## 4 consultas con inner y left join
+
+### 1.Listar todas las mascotas registradas (mostrando su identificador, nombre y especie) junto con el nombre de las vacunas que se les han aplicado y la fecha de aplicación, incluyendo también a aquellas mascotas que aún no tienen ninguna vacuna registrada, ordenadas por el identificador de la mascota
+
+```
+select 
+	m.id_mascota, 
+	m.nombre as mascota, 
+	m.especie, v.nombre as vacuna, 
+	vc.fecha_aplicacion
+from mascota m
+left join vacunacion vc on m.id_mascota = vc.id_mascota
+left join vacuna v on vc.id_vacuna = v.id_vacuna
+order by m.id_mascota;
+```
+
+### 2.Generar un reporte analítico de todos los refugios que indique su nombre, la cantidad total de solicitudes de adopción recibidas por sus animales, la edad promedio de las mascotas albergadas (mostrando un 0 si no tienen ninguna registrada) y la fecha de la solicitud de adopción más reciente. El reporte debe incluir absolutamente todos los refugios, incluso si no tienen mascotas o historial de solicitudes.
+
+```
+select 
+    r.nombre as refugio, 
+    count(s.id_solicitud) as total_solicitudes, 
+    coalesce(round(avg(m.edad), 1), 0) as edad_promedio, 
+    max(s.fecha_solicitud) as ultima_solicitud
+from refugio r
+left join mascota m on r.id_refugio = m.id_refugio
+left join solicitud_adopcion s on m.id_mascota = s.id_mascota
+group by r.id_refugio, r.nombre
+order by total_solicitudes desc;
+```
+
+### 3. Mostrar las cinco solicitudes de adopción más recientes, indicando su fecha, estado, el nombre del adoptante que la realizó y el nombre de la mascota solicitada.
+
+```sql
+select
+    s.id_solicitud,
+    s.fecha_solicitud,
+    s.estado,
+    a.nombre as adoptante,
+    m.nombre as mascota
+from solicitud_adopcion s
+inner join adoptante a on a.id_adoptante = s.id_adoptante
+inner join mascota m on m.id_mascota = s.id_mascota
+order by s.fecha_solicitud desc
+limit 5;
+```
+
+## 5. consultas con conjuntos
+
+### 1.Para un boletín informativo general, necesitamos una lista consolidada de todos los nombres y correos electrónicos registrados en nuestra plataforma. Genera una lista única (sin duplicados) combinando el nombre y correo de los adoptantes con el nombre y correo de los refugios. Renombra las columnas a nombre_contacto y correo_contacto.
+
+```
+select nombre as nombre_contacto, correo as correo_contacto
+from adoptante
+union
+select nombre, correo
+from refugio
+order by nombre_contacto;
+
+```
+
+### 2. Necesitamos identificar qué ciudades o barrios donde viven nuestros adoptantes no cuentan con cobertura de ningún refugio local. Encuentra las direcciones (o zonas) registradas por los adoptantes que no existan en la lista de direcciones de nuestros refugios
+
+```
+select direccion
+from adoptante
+except
+select direccion
+from refugio;
+
+```
+
+### 3. El refugio está buscando perfiles de mascotas que cumplan simultáneamente con dos condiciones para una campaña de adopción especial: mascotas que sean de tamaño pequeño y que estén saludables.
+
+```
+select nombre
+from mascota
+where tamano = 'pequeño'
+intersect
+select nombre
+from mascota
+where estado_salud = 'saludable';
+
+```
+
+
+
