@@ -468,7 +468,7 @@ select id_mascota, nombre, estado from mascota where id_mascota = 11;
 select * from adopcion where id_solicitud = 14;
 select * from seguimiento where id_adopcion = (select id_adopcion from adopcion where id_solicitud = 14);
 
-
+select max(id_solicitud) from solicitud_adopcion;
 call sp_aprobar_y_registrar_adopcion(16, 'primera visita de control programada al mes de entrega');
 select id_mascota, nombre, estado from mascota where id_mascota = 11;
 select * from adopcion where id_solicitud = 16;
