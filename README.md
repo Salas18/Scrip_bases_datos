@@ -456,3 +456,17 @@ $$;
 
 ```
 
+## prueba de ejecucion 
+
+```
+insert into solicitud_adopcion (fecha_solicitud, estado, motivo_rechazo, id_adoptante, id_mascota)
+values (current_date, 'pendiente', null, 4, 11);
+
+call sp_aprobar_y_registrar_adopcion(14, 'primera visita de control programada al mes de entrega');
+
+select id_mascota, nombre, estado from mascota where id_mascota = 11;
+select * from adopcion where id_solicitud = 14;
+select * from seguimiento where id_adopcion = (select id_adopcion from adopcion where id_solicitud = 14);
+
+```
+
